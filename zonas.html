@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Segurity Girl (Pure JS)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #1f1131;
+      color: #f7e8e8;
+    }
+    h1, h3 {
+      text-align: center;
+      margin: 5px 0;
+    }
+    .map-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background: rgba(52, 13, 68, 0.42);
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    #map {
+      height: 500px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    input[type="text"] {
+      padding: 8px;
+      width: 250px;
+      margin-right: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .ventana {
+      margin-top: 15px;
+      font-size: 18px;
+      color: #f7e8e8;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Mapa de zonas seguras</h1>
+  <h3>Región Metropolitana, Chile</h3>
+  <hr>
+
+  <div class="map-container">
+    <p>Mapa interactivo de zonas seguras en la Región Metropolitana de Chile.</p>
+    <hr>
+    <input type="text" id="search" placeholder="Ej: Barrio Franklin">
+    <button id="addSecureButton">Ingresar Zona Segura</button>
+    <button id="addDangerousButton">Ingresar Zona Peligrosa</button>
+    <button id="searchButton">Buscar</button>
+    <div class="ventana" id="mensaje"></div>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    var map = L.map('map').setView([-33.4489, -70.6693], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    var blueIcon = new L.Icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
+    });
+    var redIcon = new L.Icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
+    });
+
+    var ZONAS_KEY = 'zonas_seguro_peligro';
+
+    function cargarZonasDesdeLocal() {
+      var raw = localStorage.getItem(ZONAS_KEY);
+      if (!raw) {
+        var inicial = { seguras: [], peligrosas: [] };
+        localStorage.setItem(ZONAS_KEY, JSON.stringify(inicial));
+        return inicial;
+      }
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        var inicial = { seguras: [], peligrosas: [] };
+        localStorage.setItem(ZONAS_KEY, JSON.stringify(inicial));
+        return inicial;
+      }
+    }
+
+    function guardarZonasEnLocal(datos) {
+      localStorage.setItem(ZONAS_KEY, JSON.stringify(datos));
+    }
+
+    function mostrarTodasLasZonas() {
+      var datos = cargarZonasDesdeLocal();
+      datos.seguras.forEach(z => {
+        L.marker([z.lat, z.lon], { icon: blueIcon })
+         .addTo(map)
+         .bindPopup(z.nombre + ' (Zona Segura)');
+      });
+      datos.peligrosas.forEach(z => {
+        L.marker([z.lat, z.lon], { icon: redIcon })
+         .addTo(map)
+         .bindPopup(z.nombre + ' (Zona Peligrosa)');
+      });
+    }
+
+    function mostrarMensaje(texto, tipo) {
+      var div = document.getElementById('mensaje');
+      div.textContent = texto;
+      if (tipo === 'exito') {
+        div.style.color = '#4caf50';
+      } else if (tipo === 'error') {
+        div.style.color = '#ff5252';
+      } else {
+        div.style.color = '#f7e8e8';
+      }
+      setTimeout(() => { div.textContent = ''; }, 5000);
+    }
+
+    function geocodificarZona(nombreZona) {
+      return new Promise((resolve, reject) => {
+        var consulta = encodeURIComponent(nombreZona + ', Santiago, Chile');
+        var url = 'https://nominatim.openstreetmap.org/search?q='
+                  + consulta + '&format=json&limit=1';
+        fetch(url, {
+          headers: {
+            'Accept-Language': 'es',
+            'User-Agent': 'SegurityGirlApp/1.0 (tu-correo@ejemplo.com)'
+          }
+        })
+        .then(resp => resp.json())
+        .then(arr => {
+          if (Array.isArray(arr) && arr.length > 0) {
+            var obj = arr[0];
+            resolve({
+              lat: parseFloat(obj.lat),
+              lon: parseFloat(obj.lon)
+            });
+          } else {
+            reject('Zona no encontrada');
+          }
+        })
+        .catch(err => {
+          reject('Error de geocodificación');
+        });
+      });
+    }
+
+    function agregarZona(nombreZona, tipo) {
+      mostrarMensaje('Geocodificando "' + nombreZona + '"…', null);
+      geocodificarZona(nombreZona)
+        .then(coords => {
+          var datos = cargarZonasDesdeLocal();
+          var nueva = {
+            nombre: nombreZona,
+            lat: coords.lat,
+            lon: coords.lon
+          };
+          datos[tipo].push(nueva);
+          guardarZonasEnLocal(datos);
+          var icono = (tipo === 'seguras') ? blueIcon : redIcon;
+          L.marker([coords.lat, coords.lon], { icon: icono })
+           .addTo(map)
+           .bindPopup(nombreZona + (tipo === 'seguras' 
+                                  ? ' (Zona Segura)' 
+                                  : ' (Zona Peligrosa)'))
+           .openPopup();
+          mostrarMensaje('Zona "' + nombreZona + '" agregada.', 'exito');
+          document.getElementById('search').value = '';
+        })
+        .catch(errorMsg => {
+          mostrarMensaje(errorMsg, 'error');
+        });
+    }
+
+    document.getElementById('addSecureButton')
+      .addEventListener('click', () => {
+        var nombre = document.getElementById('search').value.trim();
+        if (!nombre) {
+          mostrarMensaje('Ingresa el nombre de la zona.', 'error');
+          return;
+        }
+        agregarZona(nombre, 'seguras');
+      });
+
+    document.getElementById('addDangerousButton')
+      .addEventListener('click', () => {
+        var nombre = document.getElementById('search').value.trim();
+        if (!nombre) {
+          mostrarMensaje('Ingresa el nombre de la zona.', 'error');
+          return;
+        }
+        agregarZona(nombre, 'peligrosas');
+      });
+
+    document.getElementById('searchButton')
+      .addEventListener('click', () => {
+        var nombre = document.getElementById('search').value.trim();
+        if (!nombre) {
+          mostrarMensaje('Ingresa el nombre de la zona a buscar.', 'error');
+          return;
+        }
+        mostrarMensaje('Función de búsqueda para "' + nombre + '" en desarrollo.', null);
+      });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      mostrarTodasLasZonas();
+    });
+  </script>
+
+</body>
+</html>
