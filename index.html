@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Segurity Girl (Pure JS)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 10px;
       background: #1f1131;
       color: #f7e8e8;
     }
@@ -20,39 +20,68 @@
     .map-container {
       max-width: 1000px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 15px;
       background: rgba(52, 13, 68, 0.42);
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
     }
     #map {
-      height: 500px;
+      height: 60vh;
+      min-height: 300px;
+      max-height: 600px;
       border-radius: 8px;
-      margin-top: 20px;
+      margin-top: 15px;
+    }
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
     }
     input[type="text"] {
       padding: 8px;
-      width: 250px;
-      margin-right: 10px;
+      width: 100%;
+      max-width: 300px;
       border-radius: 5px;
       border: 1px solid #ccc;
+      flex-grow: 1;
     }
     button {
-      padding: 8px 15px;
+      padding: 8px 12px;
       border: none;
       border-radius: 5px;
       background: #007bff;
       color: #fff;
       cursor: pointer;
+      white-space: nowrap;
     }
     button:hover {
       background: #0056b3;
     }
     .ventana {
-      margin-top: 15px;
-      font-size: 18px;
+      margin-top: 10px;
+      font-size: 16px;
       color: #f7e8e8;
       text-align: center;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 5px;
+      }
+      .map-container {
+        padding: 10px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      h3 {
+        font-size: 1rem;
+      }
+      button {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
@@ -65,10 +94,12 @@
   <div class="map-container">
     <p>Mapa interactivo de zonas seguras en la Región Metropolitana de Chile.</p>
     <hr>
-    <input type="text" id="search" placeholder="Ej: Barrio Franklin">
-    <button id="addSecureButton">Ingresar Zona Segura</button>
-    <button id="addDangerousButton">Ingresar Zona Peligrosa</button>
-    <button id="searchButton">Buscar</button>
+    <div class="input-group">
+      <input type="text" id="search" placeholder="Ej: Barrio Franklin">
+      <button id="addSecureButton">Zona Segura</button>
+      <button id="addDangerousButton">Zona Peligrosa</button>
+      <button id="searchButton">Buscar</button>
+    </div>
     <div class="ventana" id="mensaje"></div>
     <div id="map"></div>
   </div>
@@ -234,6 +265,5 @@
       mostrarTodasLasZonas();
     });
   </script>
-
 </body>
 </html>
