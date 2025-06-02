@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
+    /* Tus estilos CSS existentes se mantienen igual */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -105,8 +106,30 @@
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-analytics.js";
 
-  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu3MqPLst2nPqmCUk34NrIrCwNecRDego",
+      authDomain: "rutas-adb66.firebaseapp.com",
+      databaseURL: "https://rutas-adb66-default-rtdb.firebaseio.com",
+      projectId: "rutas-adb66",
+      storageBucket: "rutas-adb66.firebasestorage.app",
+      messagingSenderId: "428397731819",
+      appId: "1:428397731819:web:e9d414f6c4bb5854c483ae",
+      measurementId: "G-QVJQGCLD1D"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const database = getDatabase(app);
+    
+    // Resto del código de tu aplicación...
     var map = L.map('map').setView([-33.4489, -70.6693], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
@@ -126,39 +149,36 @@
       popupAnchor: [0, -32]
     });
 
-    var ZONAS_KEY = 'zonas_seguro_peligro';
-
-    function cargarZonasDesdeLocal() {
-      var raw = localStorage.getItem(ZONAS_KEY);
-      if (!raw) {
-        var inicial = { seguras: [], peligrosas: [] };
-        localStorage.setItem(ZONAS_KEY, JSON.stringify(inicial));
-        return inicial;
-      }
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        var inicial = { seguras: [], peligrosas: [] };
-        localStorage.setItem(ZONAS_KEY, JSON.stringify(inicial));
-        return inicial;
-      }
-    }
-
-    function guardarZonasEnLocal(datos) {
-      localStorage.setItem(ZONAS_KEY, JSON.stringify(datos));
-    }
-
     function mostrarTodasLasZonas() {
-      var datos = cargarZonasDesdeLocal();
-      datos.seguras.forEach(z => {
-        L.marker([z.lat, z.lon], { icon: blueIcon })
-         .addTo(map)
-         .bindPopup(z.nombre + ' (Zona Segura)');
-      });
-      datos.peligrosas.forEach(z => {
-        L.marker([z.lat, z.lon], { icon: redIcon })
-         .addTo(map)
-         .bindPopup(z.nombre + ' (Zona Peligrosa)');
+      const zonasRef = ref(database, 'zonas');
+      
+      onValue(zonasRef, (snapshot) => {
+        const data = snapshot.val() || { seguras: [], peligrosas: [] };
+        
+        // Limpiar marcadores existentes
+        map.eachLayer(layer => {
+          if (layer instanceof L.Marker) {
+            map.removeLayer(layer);
+          }
+        });
+
+        // Mostrar zonas seguras
+        if (data.seguras) {
+          Object.values(data.seguras).forEach(zona => {
+            L.marker([zona.lat, zona.lon], { icon: blueIcon })
+              .addTo(map)
+              .bindPopup(`${zona.nombre} (Zona Segura)<br>${new Date(zona.fecha).toLocaleString()}`);
+          });
+        }
+
+        // Mostrar zonas peligrosas
+        if (data.peligrosas) {
+          Object.values(data.peligrosas).forEach(zona => {
+            L.marker([zona.lat, zona.lon], { icon: redIcon })
+              .addTo(map)
+              .bindPopup(`${zona.nombre} (Zona Peligrosa)<br>${new Date(zona.fecha).toLocaleString()}`);
+          });
+        }
       });
     }
 
@@ -175,92 +195,86 @@
       setTimeout(() => { div.textContent = ''; }, 5000);
     }
 
-    function geocodificarZona(nombreZona) {
-      return new Promise((resolve, reject) => {
-        var consulta = encodeURIComponent(nombreZona + ', Santiago, Chile');
-        var url = 'https://nominatim.openstreetmap.org/search?q='
-                  + consulta + '&format=json&limit=1';
-        fetch(url, {
+    async function geocodificarZona(nombreZona) {
+      try {
+        const consulta = encodeURIComponent(nombreZona + ', Santiago, Chile');
+        const url = `https://nominatim.openstreetmap.org/search?q=${consulta}&format=json&limit=1`;
+        
+        const response = await fetch(url, {
           headers: {
             'Accept-Language': 'es',
-            'User-Agent': 'SegurityGirlApp/1.0 (tu-correo@ejemplo.com)'
+            'User-Agent': 'SegurityGirlApp/1.0'
           }
-        })
-        .then(resp => resp.json())
-        .then(arr => {
-          if (Array.isArray(arr) && arr.length > 0) {
-            var obj = arr[0];
-            resolve({
-              lat: parseFloat(obj.lat),
-              lon: parseFloat(obj.lon)
-            });
-          } else {
-            reject('Zona no encontrada');
-          }
-        })
-        .catch(err => {
-          reject('Error de geocodificación');
         });
-      });
-    }
-
-    function agregarZona(nombreZona, tipo) {
-      mostrarMensaje('Geocodificando "' + nombreZona + '"…', null);
-      geocodificarZona(nombreZona)
-        .then(coords => {
-          var datos = cargarZonasDesdeLocal();
-          var nueva = {
-            nombre: nombreZona,
-            lat: coords.lat,
-            lon: coords.lon
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data) && data.length > 0) {
+          return {
+            lat: parseFloat(data[0].lat),
+            lon: parseFloat(data[0].lon)
           };
-          datos[tipo].push(nueva);
-          guardarZonasEnLocal(datos);
-          var icono = (tipo === 'seguras') ? blueIcon : redIcon;
-          L.marker([coords.lat, coords.lon], { icon: icono })
-           .addTo(map)
-           .bindPopup(nombreZona + (tipo === 'seguras' 
-                                  ? ' (Zona Segura)' 
-                                  : ' (Zona Peligrosa)'))
-           .openPopup();
-          mostrarMensaje('Zona "' + nombreZona + '" agregada.', 'exito');
-          document.getElementById('search').value = '';
-        })
-        .catch(errorMsg => {
-          mostrarMensaje(errorMsg, 'error');
-        });
+        } else {
+          throw new Error('Zona no encontrada');
+        }
+      } catch (error) {
+        throw new Error('Error de geocodificación');
+      }
     }
 
-    document.getElementById('addSecureButton')
-      .addEventListener('click', () => {
-        var nombre = document.getElementById('search').value.trim();
-        if (!nombre) {
-          mostrarMensaje('Ingresa el nombre de la zona.', 'error');
-          return;
-        }
-        agregarZona(nombre, 'seguras');
-      });
+    async function agregarZona(nombreZona, tipo) {
+      try {
+        mostrarMensaje(`Geocodificando "${nombreZona}"…`, null);
+        
+        const coords = await geocodificarZona(nombreZona);
+        const nuevaZona = {
+          nombre: nombreZona,
+          lat: coords.lat,
+          lon: coords.lon,
+          fecha: new Date().toISOString()
+        };
+        
+        // Usamos push() para generar un ID único para cada zona
+        const nuevaRef = push(ref(database, `zonas/${tipo}`));
+        await set(nuevaRef, nuevaZona);
+        
+        mostrarMensaje(`Zona "${nombreZona}" agregada correctamente.`, 'exito');
+        document.getElementById('search').value = '';
+      } catch (error) {
+        mostrarMensaje(error.message, 'error');
+      }
+    }
 
-    document.getElementById('addDangerousButton')
-      .addEventListener('click', () => {
-        var nombre = document.getElementById('search').value.trim();
-        if (!nombre) {
-          mostrarMensaje('Ingresa el nombre de la zona.', 'error');
-          return;
-        }
-        agregarZona(nombre, 'peligrosas');
-      });
+    // Event listeners
+    document.getElementById('addSecureButton').addEventListener('click', () => {
+      const nombre = document.getElementById('search').value.trim();
+      if (!nombre) {
+        mostrarMensaje('Ingresa el nombre de la zona.', 'error');
+        return;
+      }
+      agregarZona(nombre, 'seguras');
+    });
 
-    document.getElementById('searchButton')
-      .addEventListener('click', () => {
-        var nombre = document.getElementById('search').value.trim();
-        if (!nombre) {
-          mostrarMensaje('Ingresa el nombre de la zona a buscar.', 'error');
-          return;
-        }
-        mostrarMensaje('Función de búsqueda para "' + nombre + '" en desarrollo.', null);
-      });
+    document.getElementById('addDangerousButton').addEventListener('click', () => {
+      const nombre = document.getElementById('search').value.trim();
+      if (!nombre) {
+        mostrarMensaje('Ingresa el nombre de la zona.', 'error');
+        return;
+      }
+      agregarZona(nombre, 'peligrosas');
+    });
 
+    document.getElementById('searchButton').addEventListener('click', () => {
+      const nombre = document.getElementById('search').value.trim();
+      if (!nombre) {
+        mostrarMensaje('Ingresa el nombre de la zona a buscar.', 'error');
+        return;
+      }
+      mostrarMensaje(`Buscando "${nombre}"...`, null);
+      // Implementación de búsqueda más específica aquí
+    });
+
+    // Inicializar el mapa y cargar zonas
     window.addEventListener('DOMContentLoaded', () => {
       mostrarTodasLasZonas();
     });
