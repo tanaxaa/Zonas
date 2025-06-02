@@ -54,23 +54,6 @@
       color: #f7e8e8;
       text-align: center;
     }
-    @media (max-width: 600px) {
-      .map-container {
-        padding: 10px;
-      }
-      #map {
-        height: 300px;
-        margin-top: 10px;
-      }
-      input[type="text"] {
-        width: 100%;
-        margin: 5px 0;
-      }
-      button {
-        width: 100%;
-        margin: 5px 0;
-      }
-    }
   </style>
 </head>
 <body>
@@ -91,24 +74,166 @@
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
   <script>
-    (function(){
-      var _0x6a3b=['getItem','setItem','stringify','parse','seguras','peligrosas','DOMContentLoaded','addEventListener','bindPopup','fetch','then','catch','openPopup','value','trim','length','push','removeItem','toString'];(function(_0x5f8ed7,_0x2ced07){var _0x9838b8=function(_0x5b8bd6){while(--_0x5b8bd6){_0x5f8ed7['push'](_0x5f8ed7['shift']());}};_0x9838b8(++_0x2ced07);}(_0x6a3b,0x16c));var _0x4e4e=function(_0x5f8ed7,_0x2ced07){_0x5f8ed7=_0x5f8ed7-0x0;var _0x9838b8=_0x6a3b[_0x5f8ed7];return _0x9838b8;};
-      var map=L['map']('map')['setView']([-33.4489,-70.6693],0xc);
-      L['tileLayer']('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:0x12,attribution:'© OpenStreetMap contributors'})['addTo'](map);
-      var blueIcon=new L['Icon']({iconUrl:'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',iconSize:[0x20,0x20],iconAnchor:[0x10,0x20],popupAnchor:[0x0,-0x20]}),redIcon=new L['Icon']({iconUrl:'https://maps.google.com/mapfiles/ms/icons/red-dot.png',iconSize:[0x20,0x20],iconAnchor:[0x10,0x20],popupAnchor:[0x0,-0x20]});
-      var ZONAS_KEY='zonas_seguro_peligro';
-      function cargarZonasDesdeLocal(){var _0x30f8f4=localStorage[_0x4e4e('0x0')](_0x4e4e('0x1'));if(!_0x30f8f4){var _0x4a6d8c={seguras:[],peligrosas:[]};localStorage[_0x4e4e('0x2')](_0x4e4e('0x3'),JSON[_0x4e4e('0x4')](_0x4a6d8c));return _0x4a6d8c;}try{return JSON[_0x4e4e('0x5')](_0x30f8f4);}catch(_0x57bca2){var _0x4a6d8c={seguras:[],peligrosas:[]};localStorage[_0x4e4e('0x6')](_0x4e4e('0x7'),JSON[_0x4e4e('0x8')](_0x4a6d8c));return _0x4a6d8c;}}
-      function guardarZonasEnLocal(_0x5b8bd6){localStorage[_0x4e4e('0x9')](_0x4e4e('0xa'),JSON[_0x4e4e('0xb')](_0x5b8bd6));}
-      function mostrarTodasLasZonas(){var _0x43f8c3=cargarZonasDesdeLocal();_0x43f8c3[_0x4e4e('0xc')]['forEach'](function(_0x27b2bc){L['marker']([_0x27b2bc['lat'],_0x27b2bc['lon']],{icon:blueIcon})['addTo'](map)[_0x4e4e('0xd')](_0x27b2bc['nombre']+' (Zona Segura)');});_0x43f8c3[_0x4e4e('0xe')]['forEach'](function(_0x345d9c){L['marker']([_0x345d9c['lat'],_0x345d9c['lon']],{icon:redIcon})['addTo'](map)[_0x4e4e('0xf')](_0x345d9c['nombre']+' (Zona Peligrosa)');});}
-      function mostrarMensaje(_0x1b208c,_0x3ec8f7){var _0x3037e4=document['getElementById']('mensaje');_0x3037e4['textContent']=_0x1b208c;if(_0x3ec8f7==='exito'){_0x3037e4['style']['color']='#4caf50';}else if(_0x3ec8f7==='error'){_0x3037e4['style']['color']='#ff5252';}else{_0x3037e4['style']['color']='#f7e8e8';}setTimeout(function(){_0x3037e4['textContent']='';},0x1388);}
-      function geocodificarZona(_0xce1569){return new Promise(function(_0x51b9de,_0x283dd0){var _0x2d1531=encodeURIComponent(_0xce1569+', Santiago, Chile');var _0x380db9='https://nominatim.openstreetmap.org/search?q='+_0x2d1531+'&format=json&limit=1';fetch(_0x380db9,{headers:{'Accept-Language':'es','User-Agent':'SegurityGirlApp/1.0 (tu-correo@ejemplo.com)'}})[_0x4e4e('0x10')](function(_0x2c15b0){return _0x2c15b0['json']();})[_0x4e4e('0x11')](function(_0x284fa8){if(Array['isArray'](_0x284fa8)&&_0x284fa8['length']>0){var _0x2ec86a=_0x284fa8[0x0];_0x51b9de({lat:parseFloat(_0x2ec86a['lat']),lon:parseFloat(_0x2ec86a['lon'])});}else{_0x283dd0('Zona no encontrada');}})[_0x4e4e('0x12')](function(_0x4211ed){_0x283dd0('Error de geocodificación');});});}
-      function agregarZona(_0x449dca,_0x556b99){mostrarMensaje('Geocodificando "'+_0x449dca+'"…',null);geocodificarZona(_0x449dca)[_0x4e4e('0x13')](function(_0x212567){var _0x45c6fe=cargarZonasDesdeLocal();var _0x21efba={nombre:_0x449dca,lat:_0x212567['lat'],lon:_0x212567['lon']};_0x45c6fe[_0x556b99][_0x4e4e('0x14')](_0x21efba);guardarZonasEnLocal(_0x45c6fe);var _0x29f118=_0x556b99==='seguras'?blueIcon:redIcon;L['marker']([_0x212567['lat'],_0x212567['lon']],{icon:_0x29f118})['addTo'](map)['bindPopup'](_0x449dca+(_0x556b99==='seguras'?' (Zona Segura)':' (Zona Peligrosa)'))[_0x4e4e('0x15')]();mostrarMensaje('Zona "'+_0x449dca+'" agregada.','exito');document['getElementById']('search')['value']='';})[_0x4e4e('0x16')](function(_0x17392f){mostrarMensaje(_0x17392f,'error');});}
-      document['getElementById']('addSecureButton')[_0x4e4e('0x17')](function(){var _0x5b66db=document['getElementById']('search')[_0x4e4e('0x18')]();if(!_0x5b66db[_0x4e4e('0x19')]){mostrarMensaje('Ingresa el nombre de la zona.','error');return;}agregarZona(_0x5b66db,'seguras');});
-      document['getElementById']('addDangerousButton')[_0x4e4e('0x1a')](function(){var _0x5b66db=document['getElementById']('search')[_0x4e4e('0x1b')]();if(!_0x5b66db[_0x4e4e('0x1c')]){mostrarMensaje('Ingresa el nombre de la zona.','error');return;}agregarZona(_0x5b66db,'peligrosas');});
-      document['getElementById']('searchButton')[_0x4e4e('0x1d')](function(){var _0x5b66db=document['getElementById']('search')[_0x4e4e('0x1e')]();if(!_0x5b66db[_0x4e4e('0x1f')]){mostrarMensaje('Ingresa el nombre de la zona a buscar.','error');return;}mostrarMensaje('Función de búsqueda para "'+_0x5b66db+'" en desarrollo.',null);});
-      window[_0x4e4e('0x20')]('DOMContentLoaded',mostrarTodasLasZonas);
-    })();
+    var map = L.map('map').setView([-33.4489, -70.6693], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    var blueIcon = new L.Icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
+    });
+    var redIcon = new L.Icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
+    });
+
+    var ZONAS_KEY = 'zonas_seguro_peligro';
+
+    function cargarZonasDesdeLocal() {
+      var raw = localStorage.getItem(ZONAS_KEY);
+      if (!raw) {
+        var inicial = { seguras: [], peligrosas: [] };
+        localStorage.setItem(ZONAS_KEY, JSON.stringify(inicial));
+        return inicial;
+      }
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        var inicial = { seguras: [], peligrosas: [] };
+        localStorage.setItem(ZONAS_KEY, JSON.stringify(inicial));
+        return inicial;
+      }
+    }
+
+    function guardarZonasEnLocal(datos) {
+      localStorage.setItem(ZONAS_KEY, JSON.stringify(datos));
+    }
+
+    function mostrarTodasLasZonas() {
+      var datos = cargarZonasDesdeLocal();
+      datos.seguras.forEach(z => {
+        L.marker([z.lat, z.lon], { icon: blueIcon })
+         .addTo(map)
+         .bindPopup(z.nombre + ' (Zona Segura)');
+      });
+      datos.peligrosas.forEach(z => {
+        L.marker([z.lat, z.lon], { icon: redIcon })
+         .addTo(map)
+         .bindPopup(z.nombre + ' (Zona Peligrosa)');
+      });
+    }
+
+    function mostrarMensaje(texto, tipo) {
+      var div = document.getElementById('mensaje');
+      div.textContent = texto;
+      if (tipo === 'exito') {
+        div.style.color = '#4caf50';
+      } else if (tipo === 'error') {
+        div.style.color = '#ff5252';
+      } else {
+        div.style.color = '#f7e8e8';
+      }
+      setTimeout(() => { div.textContent = ''; }, 5000);
+    }
+
+    function geocodificarZona(nombreZona) {
+      return new Promise((resolve, reject) => {
+        var consulta = encodeURIComponent(nombreZona + ', Santiago, Chile');
+        var url = 'https://nominatim.openstreetmap.org/search?q='
+                  + consulta + '&format=json&limit=1';
+        fetch(url, {
+          headers: {
+            'Accept-Language': 'es',
+            'User-Agent': 'SegurityGirlApp/1.0 (tu-correo@ejemplo.com)'
+          }
+        })
+        .then(resp => resp.json())
+        .then(arr => {
+          if (Array.isArray(arr) && arr.length > 0) {
+            var obj = arr[0];
+            resolve({
+              lat: parseFloat(obj.lat),
+              lon: parseFloat(obj.lon)
+            });
+          } else {
+            reject('Zona no encontrada');
+          }
+        })
+        .catch(err => {
+          reject('Error de geocodificación');
+        });
+      });
+    }
+
+    function agregarZona(nombreZona, tipo) {
+      mostrarMensaje('Geocodificando "' + nombreZona + '"…', null);
+      geocodificarZona(nombreZona)
+        .then(coords => {
+          var datos = cargarZonasDesdeLocal();
+          var nueva = {
+            nombre: nombreZona,
+            lat: coords.lat,
+            lon: coords.lon
+          };
+          datos[tipo].push(nueva);
+          guardarZonasEnLocal(datos);
+          var icono = (tipo === 'seguras') ? blueIcon : redIcon;
+          L.marker([coords.lat, coords.lon], { icon: icono })
+           .addTo(map)
+           .bindPopup(nombreZona + (tipo === 'seguras' 
+                                  ? ' (Zona Segura)' 
+                                  : ' (Zona Peligrosa)'))
+           .openPopup();
+          mostrarMensaje('Zona "' + nombreZona + '" agregada.', 'exito');
+          document.getElementById('search').value = '';
+        })
+        .catch(errorMsg => {
+          mostrarMensaje(errorMsg, 'error');
+        });
+    }
+
+    document.getElementById('addSecureButton')
+      .addEventListener('click', () => {
+        var nombre = document.getElementById('search').value.trim();
+        if (!nombre) {
+          mostrarMensaje('Ingresa el nombre de la zona.', 'error');
+          return;
+        }
+        agregarZona(nombre, 'seguras');
+      });
+
+    document.getElementById('addDangerousButton')
+      .addEventListener('click', () => {
+        var nombre = document.getElementById('search').value.trim();
+        if (!nombre) {
+          mostrarMensaje('Ingresa el nombre de la zona.', 'error');
+          return;
+        }
+        agregarZona(nombre, 'peligrosas');
+      });
+
+    document.getElementById('searchButton')
+      .addEventListener('click', () => {
+        var nombre = document.getElementById('search').value.trim();
+        if (!nombre) {
+          mostrarMensaje('Ingresa el nombre de la zona a buscar.', 'error');
+          return;
+        }
+        mostrarMensaje('Función de búsqueda para "' + nombre + '" en desarrollo.', null);
+      });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      mostrarTodasLasZonas();
+    });
   </script>
+
 </body>
 </html>
