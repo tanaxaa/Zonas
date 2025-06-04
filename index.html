@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    /* Tus estilos CSS existentes se mantienen igual */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -66,6 +65,51 @@
       color: #f7e8e8;
       text-align: center;
     }
+
+    /* Estilos para el slider de ubicación */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+    .slider.round {
+      border-radius: 20px;
+    }
+    .slider.round:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #007bff;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
     @media (max-width: 600px) {
       body {
         padding: 5px;
@@ -83,56 +127,6 @@
         padding: 8px 10px;
         font-size: 0.9rem;
       }
-
-      .switch {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 20px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 20px;
-}
-
-.slider.round {
-  border-radius: 20px;
-}
-
-.slider.round:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: #007bff;
-}
-
-input:checked + .slider:before {
-  transform: translateX(20px);
-}
-
     }
   </style>
 </head>
@@ -142,29 +136,24 @@ input:checked + .slider:before {
   <h3>Región Metropolitana, Chile</h3>
   <hr>
 
-
-  
   <div class="map-container">
     <p>Mapa interactivo de zonas seguras en la Región Metropolitana de Chile.</p>
     <hr>
-<div class="input-group">
-  <input type="text" id="search" placeholder="Ej: Barrio Franklin">
-  <button id="addSecureButton">Zona Segura</button>
-  <button id="addDangerousButton">Zona Peligrosa</button>
-  <button id="searchButton">Buscar</button>
-  <label class="switch">
-    <input type="checkbox" id="locationToggle">
-    <span class="slider round"></span>
-  </label>
-</div>
-
+    <div class="input-group">
+      <input type="text" id="search" placeholder="Ej: Barrio Franklin">
+      <button id="addSecureButton">Zona Segura</button>
+      <button id="addDangerousButton">Zona Peligrosa</button>
+      <button id="searchButton">Buscar</button>
+      <label class="switch">
+        <input type="checkbox" id="locationToggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
     <div class="ventana" id="mensaje"></div>
     <div id="map"></div>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  
-  <!-- Firebase SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
@@ -181,12 +170,12 @@ input:checked + .slider:before {
       measurementId: "G-QVJQGCLD1D"
     };
 
-    // Initialize Firebase
+    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const database = getDatabase(app);
-    
-    // Resto del código de tu aplicación...
+
+    // Inicializar mapa
     var map = L.map('map').setView([-33.4489, -70.6693], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
@@ -208,17 +197,14 @@ input:checked + .slider:before {
 
     function mostrarTodasLasZonas() {
       const zonasRef = ref(database, 'zonas');
-      
       onValue(zonasRef, (snapshot) => {
         const data = snapshot.val() || { seguras: [], peligrosas: [] };
-        
         // Limpiar marcadores existentes
         map.eachLayer(layer => {
           if (layer instanceof L.Marker) {
             map.removeLayer(layer);
           }
         });
-
         // Mostrar zonas seguras
         if (data.seguras) {
           Object.values(data.seguras).forEach(zona => {
@@ -227,7 +213,6 @@ input:checked + .slider:before {
               .bindPopup(`${zona.nombre} (Zona Segura)<br>${new Date(zona.fecha).toLocaleString()}`);
           });
         }
-
         // Mostrar zonas peligrosas
         if (data.peligrosas) {
           Object.values(data.peligrosas).forEach(zona => {
@@ -256,16 +241,13 @@ input:checked + .slider:before {
       try {
         const consulta = encodeURIComponent(nombreZona + ', Santiago, Chile');
         const url = `https://nominatim.openstreetmap.org/search?q=${consulta}&format=json&limit=1`;
-        
         const response = await fetch(url, {
           headers: {
             'Accept-Language': 'es',
             'User-Agent': 'SegurityGirlApp/1.0'
           }
         });
-        
         const data = await response.json();
-        
         if (Array.isArray(data) && data.length > 0) {
           return {
             lat: parseFloat(data[0].lat),
@@ -282,7 +264,6 @@ input:checked + .slider:before {
     async function agregarZona(nombreZona, tipo) {
       try {
         mostrarMensaje(`Geocodificando "${nombreZona}"…`, null);
-        
         const coords = await geocodificarZona(nombreZona);
         const nuevaZona = {
           nombre: nombreZona,
@@ -290,11 +271,8 @@ input:checked + .slider:before {
           lon: coords.lon,
           fecha: new Date().toISOString()
         };
-        
-        // Usamos push() para generar un ID único para cada zona
         const nuevaRef = push(ref(database, `zonas/${tipo}`));
         await set(nuevaRef, nuevaZona);
-        
         mostrarMensaje(`Zona "${nombreZona}" agregada correctamente.`, 'exito');
         document.getElementById('search').value = '';
       } catch (error) {
@@ -302,7 +280,7 @@ input:checked + .slider:before {
       }
     }
 
-    // Event listeners
+    // Configurar botones de agregar / buscar
     document.getElementById('addSecureButton').addEventListener('click', () => {
       const nombre = document.getElementById('search').value.trim();
       if (!nombre) {
@@ -328,42 +306,62 @@ input:checked + .slider:before {
         return;
       }
       mostrarMensaje(`Buscando "${nombre}"...`, null);
-      // Implementación de búsqueda más específica aquí
+      // Aquí podrías agregar la lógica de búsqueda
     });
 
-    // Inicializar el mapa y cargar zonas
+    // Cargar zonas al iniciar
     window.addEventListener('DOMContentLoaded', () => {
       mostrarTodasLasZonas();
     });
 
-    // Event listener para el cambio en el botón deslizante
-document.getElementById('locationToggle').addEventListener('change', function() {
-  if (this.checked) {
-    // Botón deslizante activado, mostrar ubicación del usuario
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const userLat = position.coords.latitude;
-        const userLon = position.coords.longitude;
-        // Mostrar la ubicación del usuario en el mapa
-        L.marker([userLat, userLon]).addTo(map).bindPopup('Tu ubicación actual');
-      }, function(error) {
-        mostrarMensaje('Error al obtener la ubicación.', 'error');
-      });
-    } else {
-      mostrarMensaje('Geolocalización no soportada por tu navegador.', 'error');
-    }
-  } else {
-    // Botón deslizante desactivado, ocultar ubicación del usuario
-    // Limpiar marcadores de ubicación del usuario en el mapa
-    map.eachLayer(layer => {
-      if (layer instanceof L.Marker && layer.getPopup().getContent() === 'Tu ubicación actual') {
-        map.removeLayer(layer);
+    // Listener del toggle de ubicación
+    document.getElementById('locationToggle').addEventListener('change', function() {
+      if (this.checked) {
+        if (!navigator.geolocation) {
+          mostrarMensaje('Geolocalización no soportada por tu navegador.', 'error');
+          this.checked = false;
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            L.marker([userLat, userLon])
+              .addTo(map)
+              .bindPopup('Tu ubicación actual');
+          },
+          function(error) {
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                mostrarMensaje('Permiso de ubicación denegado por el usuario.', 'error');
+                break;
+              case error.POSITION_UNAVAILABLE:
+                mostrarMensaje('La información de ubicación no está disponible.', 'error');
+                break;
+              case error.TIMEOUT:
+                mostrarMensaje('El tiempo de espera para obtener la ubicación ha expirado.', 'error');
+                break;
+              default:
+                mostrarMensaje('Error desconocido al obtener la ubicación.', 'error');
+                break;
+            }
+            // Si falla, desactivo el toggle para que el usuario lo vea
+            document.getElementById('locationToggle').checked = false;
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      } else {
+        map.eachLayer(layer => {
+          if (layer instanceof L.Marker && layer.getPopup()?.getContent() === 'Tu ubicación actual') {
+            map.removeLayer(layer);
+          }
+        });
       }
     });
-  }
-});
-
-
   </script>
 </body>
 </html>
