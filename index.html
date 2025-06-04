@@ -194,14 +194,20 @@
       iconAnchor: [16, 32],
       popupAnchor: [0, -32]
     });
+    var greenIcon = new L.Icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
+    });
 
     function mostrarTodasLasZonas() {
       const zonasRef = ref(database, 'zonas');
       onValue(zonasRef, (snapshot) => {
         const data = snapshot.val() || { seguras: [], peligrosas: [] };
-        // Limpiar marcadores existentes
+        // Limpiar marcadores existentes (excepto el de ubicación actual)
         map.eachLayer(layer => {
-          if (layer instanceof L.Marker) {
+          if (layer instanceof L.Marker && layer.getPopup()?.getContent() !== 'Tu ubicación actual') {
             map.removeLayer(layer);
           }
         });
@@ -299,14 +305,21 @@
       agregarZona(nombre, 'peligrosas');
     });
 
-    document.getElementById('searchButton').addEventListener('click', () => {
+    document.getElementById('searchButton').addEventListener('click', async () => {
       const nombre = document.getElementById('search').value.trim();
       if (!nombre) {
         mostrarMensaje('Ingresa el nombre de la zona a buscar.', 'error');
         return;
       }
-      mostrarMensaje(`Buscando "${nombre}"...`, null);
-      // Aquí podrías agregar la lógica de búsqueda
+      
+      try {
+        mostrarMensaje(`Buscando "${nombre}"...`, null);
+        const coords = await geocodificarZona(nombre);
+        map.setView([coords.lat, coords.lon], 15);
+        mostrarMensaje(`Ubicación "${nombre}" encontrada`, 'exito');
+      } catch (error) {
+        mostrarMensaje(`No se pudo encontrar "${nombre}"`, 'error');
+      }
     });
 
     // Cargar zonas al iniciar
@@ -314,52 +327,86 @@
       mostrarTodasLasZonas();
     });
 
-    // Listener del toggle de ubicación
-    document.getElementById('locationToggle').addEventListener('change', function() {
-      if (this.checked) {
+    // Listener del toggle de ubicación - Versión mejorada
+    document.getElementById('locationToggle').addEventListener('change', async function() {
+      const toggle = this;
+      
+      if (toggle.checked) {
         if (!navigator.geolocation) {
           mostrarMensaje('Geolocalización no soportada por tu navegador.', 'error');
-          this.checked = false;
+          toggle.checked = false;
           return;
         }
-        navigator.geolocation.getCurrentPosition(
-          function(position) {
-            const userLat = position.coords.latitude;
-            const userLon = position.coords.longitude;
-            L.marker([userLat, userLon])
-              .addTo(map)
-              .bindPopup('Tu ubicación actual');
-          },
-          function(error) {
-            switch (error.code) {
-              case error.PERMISSION_DENIED:
-                mostrarMensaje('Permiso de ubicación denegado por el usuario.', 'error');
-                break;
-              case error.POSITION_UNAVAILABLE:
-                mostrarMensaje('La información de ubicación no está disponible.', 'error');
-                break;
-              case error.TIMEOUT:
-                mostrarMensaje('El tiempo de espera para obtener la ubicación ha expirado.', 'error');
-                break;
-              default:
-                mostrarMensaje('Error desconocido al obtener la ubicación.', 'error');
-                break;
+        
+        try {
+          // Verificar permisos primero
+          if (navigator.permissions) {
+            const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+            if (permissionStatus.state === 'denied') {
+              mostrarMensaje('Permiso de ubicación denegado. Por favor, habilítalo en la configuración del navegador.', 'error');
+              toggle.checked = false;
+              return;
             }
-            // Si falla, desactivo el toggle para que el usuario lo vea
-            document.getElementById('locationToggle').checked = false;
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
           }
-        );
+          
+          mostrarMensaje('Obteniendo tu ubicación...', null);
+          
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              reject,
+              {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+              }
+            );
+          });
+          
+          const userLat = position.coords.latitude;
+          const userLon = position.coords.longitude;
+          
+          // Centrar el mapa en la ubicación del usuario
+          map.setView([userLat, userLon], 15);
+          
+          // Agregar marcador con icono verde
+          L.marker([userLat, userLon], { icon: greenIcon })
+            .addTo(map)
+            .bindPopup('Tu ubicación actual')
+            .openPopup();
+          
+          mostrarMensaje('Ubicación obtenida correctamente', 'exito');
+          
+        } catch (error) {
+          toggle.checked = false;
+          
+          let errorMessage = 'Error al obtener la ubicación';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Permiso de ubicación denegado. Por favor, habilita los permisos de ubicación para este sitio.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'La información de ubicación no está disponible. Verifica tu conexión a Internet y que el GPS esté activado.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'El tiempo de espera para obtener la ubicación ha expirado. Intenta nuevamente en un área con mejor señal.';
+              break;
+            default:
+              errorMessage = `Error desconocido: ${error.message}`;
+              break;
+          }
+          
+          mostrarMensaje(errorMessage, 'error');
+          console.error('Error de geolocalización:', error);
+        }
       } else {
+        // Limpiar solo el marcador de ubicación actual
         map.eachLayer(layer => {
           if (layer instanceof L.Marker && layer.getPopup()?.getContent() === 'Tu ubicación actual') {
             map.removeLayer(layer);
           }
         });
+        mostrarMensaje('Seguimiento de ubicación desactivado', null);
       }
     });
   </script>
