@@ -83,6 +83,56 @@
         padding: 8px 10px;
         font-size: 0.9rem;
       }
+
+      .switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 20px;
+}
+
+.slider.round {
+  border-radius: 20px;
+}
+
+.slider.round:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #007bff;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
     }
   </style>
 </head>
@@ -92,15 +142,22 @@
   <h3>Región Metropolitana, Chile</h3>
   <hr>
 
+
+  
   <div class="map-container">
     <p>Mapa interactivo de zonas seguras en la Región Metropolitana de Chile.</p>
     <hr>
-    <div class="input-group">
-      <input type="text" id="search" placeholder="Ej: Barrio Franklin">
-      <button id="addSecureButton">Zona Segura</button>
-      <button id="addDangerousButton">Zona Peligrosa</button>
-      <button id="searchButton">Buscar</button>
-    </div>
+<div class="input-group">
+  <input type="text" id="search" placeholder="Ej: Barrio Franklin">
+  <button id="addSecureButton">Zona Segura</button>
+  <button id="addDangerousButton">Zona Peligrosa</button>
+  <button id="searchButton">Buscar</button>
+  <label class="switch">
+    <input type="checkbox" id="locationToggle">
+    <span class="slider round"></span>
+  </label>
+</div>
+
     <div class="ventana" id="mensaje"></div>
     <div id="map"></div>
   </div>
@@ -278,6 +335,35 @@
     window.addEventListener('DOMContentLoaded', () => {
       mostrarTodasLasZonas();
     });
+
+    // Event listener para el cambio en el botón deslizante
+document.getElementById('locationToggle').addEventListener('change', function() {
+  if (this.checked) {
+    // Botón deslizante activado, mostrar ubicación del usuario
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLon = position.coords.longitude;
+        // Mostrar la ubicación del usuario en el mapa
+        L.marker([userLat, userLon]).addTo(map).bindPopup('Tu ubicación actual');
+      }, function(error) {
+        mostrarMensaje('Error al obtener la ubicación.', 'error');
+      });
+    } else {
+      mostrarMensaje('Geolocalización no soportada por tu navegador.', 'error');
+    }
+  } else {
+    // Botón deslizante desactivado, ocultar ubicación del usuario
+    // Limpiar marcadores de ubicación del usuario en el mapa
+    map.eachLayer(layer => {
+      if (layer instanceof L.Marker && layer.getPopup().getContent() === 'Tu ubicación actual') {
+        map.removeLayer(layer);
+      }
+    });
+  }
+});
+
+
   </script>
 </body>
 </html>
